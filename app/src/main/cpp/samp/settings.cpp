@@ -24,7 +24,7 @@ namespace
 
 CSettings::CSettings()
 {
-    FLog("Loading settings..");
+    Log("Loading settings..");
 
     // Valores exclusivos do painel Nexion. -1 significa que ainda não existe
     // preferência gravada para aquele item, preservando o padrão do GTA.
@@ -71,7 +71,7 @@ CSettings::CSettings()
 
     if(reader.ParseError() < 0)
     {
-        FLog("Error: can't load %s - using default settings", buff);
+        Log("Error: can't load %s - using default settings", buff);
         strcpy(m_Settings.szNickName, "__android_123");
         strcpy(m_Settings.szHost, "132.243.253.240");
         strcpy(m_Settings.szPassword, "");
@@ -217,7 +217,7 @@ CSettings::CSettings()
     m_Settings.iRadarRect = reader.GetBoolean("gui", "radarrect", false);
     m_Settings.iSkyBox = reader.GetBoolean("gui", "skybox", false);
     m_Settings.iSnow = reader.GetBoolean("gui", "snow", false);
-    FLog("Settings loaded.");
+    Log("Settings loaded.");
 }
 
 const stSettings& CSettings::GetReadOnly()
@@ -239,7 +239,7 @@ void CSettings::SaveNexionMenuSettings()
     const SI_Error loadResult = ini.LoadFile(path);
     if (loadResult < 0)
     {
-        FLog("Nexion settings: can't load %s (%d), saving a new file", path, static_cast<int>(loadResult));
+        Log("Nexion settings: can't load %s (%d), saving a new file", path, static_cast<int>(loadResult));
     }
 
     ini.SetLongValue("gui", "FPSLimit", ClampSetting(m_Settings.iFPSCount, 30, 240, 120), nullptr, true);
@@ -298,6 +298,6 @@ void CSettings::SaveNexionMenuSettings()
     const SI_Error saveResult = ini.SaveFile(path);
     if (saveResult < 0)
     {
-        FLog("Nexion settings: can't save %s (%d)", path, static_cast<int>(saveResult));
+        Log("Nexion settings: can't save %s (%d)", path, static_cast<int>(saveResult));
     }
 }
