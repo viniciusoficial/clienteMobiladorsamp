@@ -464,22 +464,6 @@ namespace
     }
 }
 
-int GetNexionTargetingMode()
-{
-    const int* value = NativeSettingValue(kSettingTargetingMode);
-    if (value && *value >= 0 && *value <= 1)
-        return *value;
-
-    if (pSettings)
-    {
-        const int saved = pSettings->GetReadOnly().iNexionMobileSettings[kSettingTargetingMode];
-        if (saved >= 0 && saved <= 1)
-            return saved;
-    }
-
-    return 0;
-}
-
 NexionSettingsMenu::NexionSettingsMenu()
 {
     setVisible(false);
