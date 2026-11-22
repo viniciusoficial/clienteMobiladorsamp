@@ -638,7 +638,6 @@ void NexionSettingsMenu::show()
 
     setVisible(true);
     if (pGame) pGame->EnableGameInput(false);
-    if (pJavaWrapper) pJavaWrapper->SetNexionHudLogoVisible(false);
 }
 
 void NexionSettingsMenu::hide()

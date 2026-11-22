@@ -158,7 +158,6 @@ namespace
     {
         if (g_largeMapOpen == open) return;
         g_largeMapOpen = open;
-        if (pJavaWrapper) pJavaWrapper->SetNexionHudLogoVisible(!open);
     }
     bool g_miniMapTouchActive = false;
     ImVec2 g_largeMapLastTouch(0.0f, 0.0f);
@@ -551,12 +550,12 @@ namespace
                 if (!graph)
                 {
                     g_nextRoadGraphLoadAttempt = GetTickCount() + 5000;
-                    FLog("NexionMiniMap: nao foi possivel carregar nodes.json");
+                    Log("NexionMiniMap: nao foi possivel carregar nodes.json");
                     return;
                 }
 
                 g_roadGraph = graph;
-                FLog("NexionMiniMap: malha GPS carregada (%zu nos)", graph->nodes.size());
+                Log("NexionMiniMap: malha GPS carregada (%zu nos)", graph->nodes.size());
                 if (g_destinationActive)
                     StartRoadRouteCalculationForDestination();
             });
@@ -651,7 +650,7 @@ namespace
         if (DistanceSquared(playerX, playerY, targetX, targetY) > arrivalDistanceSquared) return false;
 
         ClearActiveDestination();
-        FLog("NexionMiniMap: destino alcancado, rota encerrada");
+        Log("NexionMiniMap: destino alcancado, rota encerrada");
         return true;
     }
 
@@ -713,7 +712,7 @@ namespace
         std::FILE* asset = std::fopen(assetPath, "rb");
         if (!asset)
         {
-            FLog("NexionMiniMap: asset RGBA ainda indisponivel: %s", assetPath);
+            Log("NexionMiniMap: asset RGBA ainda indisponivel: %s", assetPath);
             return false;
         }
 
@@ -722,7 +721,7 @@ namespace
         {
             if (image) RwImageDestroy(image);
             std::fclose(asset);
-            FLog("NexionMiniMap: falha ao alocar imagem RGBA");
+            Log("NexionMiniMap: falha ao alocar imagem RGBA");
             return false;
         }
 
@@ -742,7 +741,7 @@ namespace
         if (!readSucceeded)
         {
             RwImageDestroy(image);
-            FLog("NexionMiniMap: asset RGBA incompleto: %s", assetPath);
+            Log("NexionMiniMap: asset RGBA incompleto: %s", assetPath);
             return false;
         }
 
@@ -754,7 +753,7 @@ namespace
                 for (int column = 0; column < kMapWidth; ++column)
                     rowPixels[static_cast<size_t>(column) * kMapBytesPerPixel + 3] = 255;
             }
-            FLog("NexionMiniMap: modo diagnostico opaco ativo");
+            Log("NexionMiniMap: modo diagnostico opaco ativo");
         }
 
         RwRaster* raster = RwRasterCreate(kMapWidth, kMapHeight, 32, rwRASTERFORMAT8888 | rwRASTERTYPETEXTURE);
@@ -762,7 +761,7 @@ namespace
         {
             if (raster && RwRasterDestroy) RwRasterDestroy(raster);
             RwImageDestroy(image);
-            FLog("NexionMiniMap: falha ao criar raster %dx%d", kMapWidth, kMapHeight);
+            Log("NexionMiniMap: falha ao criar raster %dx%d", kMapWidth, kMapHeight);
             return false;
         }
 
@@ -772,12 +771,12 @@ namespace
         if (!g_mapTexture)
         {
             if (RwRasterDestroy) RwRasterDestroy(raster);
-            FLog("NexionMiniMap: falha ao criar textura");
+            Log("NexionMiniMap: falha ao criar textura");
             return false;
         }
 
         RwTextureSetFilterMode(g_mapTexture, rwFILTERLINEAR);
-        FLog("NexionMiniMap: textura RGBA carregada %dx%d", kMapWidth, kMapHeight);
+        Log("NexionMiniMap: textura RGBA carregada %dx%d", kMapWidth, kMapHeight);
         return true;
     }
 
@@ -846,7 +845,7 @@ namespace
         }
 
         RwTextureSetFilterMode(g_destinationMarkerTexture, rwFILTERLINEAR);
-        FLog("NexionMiniMap: marcador de destino carregado");
+        Log("NexionMiniMap: marcador de destino carregado");
         return true;
     }
 
@@ -932,7 +931,7 @@ namespace
             return nullptr;
         }
         RwTextureSetFilterMode(texture, rwFILTERLINEAR);
-        FLog("NexionMiniMap: blip %u carregado", static_cast<unsigned int>(type));
+        Log("NexionMiniMap: blip %u carregado", static_cast<unsigned int>(type));
         return texture;
     }
 
@@ -1728,7 +1727,6 @@ namespace NexionMiniMap
         if (!s_hudLogoShown)
         {
             s_hudLogoShown = true;
-            if (pJavaWrapper) pJavaWrapper->SetNexionHudLogoVisible(false);
         }
 
         EnsureRoadGraphLoad();
@@ -1826,7 +1824,7 @@ namespace NexionMiniMap
         const float maximumDistanceSquared = kMaxDestinationRoadDistance * kMaxDestinationRoadDistance;
         if (!nearestRoad || nearestDistanceSquared > maximumDistanceSquared)
         {
-            FLog("NexionMiniMap: destino ignorado, fora da malha de ruas");
+            Log("NexionMiniMap: destino ignorado, fora da malha de ruas");
             return false;
         }
 

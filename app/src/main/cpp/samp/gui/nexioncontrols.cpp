@@ -284,7 +284,7 @@ namespace NexionControls
             std::FILE* file = std::fopen(path, "rb");
             if (!file)
             {
-                FLog("NexionControls: asset ausente: %s", path);
+                Log("NexionControls: asset ausente: %s", path);
                 return false;
             }
 
@@ -312,7 +312,7 @@ namespace NexionControls
             if (!ok)
             {
                 RwImageDestroy(image);
-                FLog("NexionControls: asset incompleto: %s", path);
+                Log("NexionControls: asset incompleto: %s", path);
                 return false;
             }
 
@@ -334,7 +334,7 @@ namespace NexionControls
             }
 
             RwTextureSetFilterMode(button.texture, rwFILTERLINEAR);
-            FLog("NexionControls: textura carregada: %s", button.name);
+            Log("NexionControls: textura carregada: %s", button.name);
             return true;
         }
 
