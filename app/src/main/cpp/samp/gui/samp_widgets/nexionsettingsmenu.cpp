@@ -752,9 +752,7 @@ void NexionSettingsMenu::drawControlEditor(ImGuiRenderer* renderer)
         const ImVec2 half(buttonSize * 0.5f, buttonSize * 0.5f);
         if (texture)
         {
-            renderer->drawImage(center - half, center + half, texture,
-                                ImColor(255, 255, 255,
-                                        static_cast<int>(std::max(0.0f, std::min(1.0f, opacity)) * 255.0f)));
+            renderer->drawImage(center - half, center + half, texture);
         }
         else
         {
