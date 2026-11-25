@@ -149,11 +149,6 @@ void NativeCameraMouseReset()
     g_smoothX = 0.0f;
     g_smoothY = 0.0f;
     g_hadMouseInputThisFrame = false;
-    g_hasDesiredState = false;
-    g_lastCamPtr = nullptr;
-    g_lastMode = 0xFFFF;
-    g_desiredAlpha = 0.0f;
-    g_desiredBeta = 0.0f;
 }
 
 void NativeCameraMouseSetOptions(float maxDelta, float smoothing, float aimSensitivity, bool vehicleAutoCenter)
@@ -173,7 +168,6 @@ void NativeCameraMousePreProcess(CCamera& camera, CCam* targetCam)
 {
     if (!targetCam || !PcInputIsEnabledForTouch() || CFirstPersonCamera::IsEnabled())
         return;
-
     CCam* activeCam = &camera.m_aCams[camera.m_nActiveCam];
     if (targetCam != activeCam)
         return;
@@ -257,75 +251,50 @@ void NativeCameraMousePreProcess(CCamera& camera, CCam* targetCam)
     {
         g_desiredBeta = WrapAngle(g_desiredBeta - dx * sens);
         g_desiredAlpha = std::clamp(g_desiredAlpha + dy * sens, minAlpha, maxAlpha);
-    }
 
-    if (vehicleMode && g_vehicleAutoCenter.load() && !hasInput)
-    {
-        // Optional vehicle auto-center: follow GTA's car yaw when user didn't move mouse.
-        g_desiredBeta = WrapAngle(targetCam->m_fHorizontalAngle);
-    }
-    else if (hasInput || !vehicleMode || !g_vehicleAutoCenter.load())
-    {
         targetCam->m_fHorizontalAngle = g_desiredBeta;
         targetCam->BetaSpeed = 0.0f;
         targetCam->m_fBetaSpeedOverOneFrame = 0.0f;
         targetCam->m_fTrueBeta = g_desiredBeta;
+
+        targetCam->Alpha = g_desiredAlpha;
+        targetCam->AlphaSpeed = 0.0f;
+        targetCam->m_fAlphaSpeedOverOneFrame = 0.0f;
+        targetCam->m_fTrueAlpha = g_desiredAlpha;
+        targetCam->m_fIdealAlpha = g_desiredAlpha;
+    }
+    else if (vehicleMode && g_vehicleAutoCenter.load())
+    {
+        g_desiredBeta = WrapAngle(targetCam->m_fHorizontalAngle);
     }
 
-    targetCam->Alpha = g_desiredAlpha;
-    targetCam->AlphaSpeed = 0.0f;
-    targetCam->m_fAlphaSpeedOverOneFrame = 0.0f;
-    targetCam->m_fTrueAlpha = g_desiredAlpha;
-    targetCam->m_fIdealAlpha = g_desiredAlpha;
     targetCam->ResetKeyboardStatics = true;
-    WriteStaticFollowAlphas(g_desiredAlpha);
 }
 
 void NativeCameraMousePostProcess(CCamera& camera, CCam* targetCam)
 {
     if (!targetCam || !g_hasDesiredState || !PcInputIsEnabledForTouch() || CFirstPersonCamera::IsEnabled())
         return;
-
     CCam* activeCam = &camera.m_aCams[camera.m_nActiveCam];
     if (targetCam != activeCam)
         return;
-
     const uint16_t mode = static_cast<uint16_t>(targetCam->m_nMode);
     if (!IsControllableCamMode(mode) || targetCam->LookingBehind || targetCam->bBehindPlayerDesired)
         return;
 
-    const bool aimMode = IsAimCamMode(mode);
-    const bool vehicleMode = IsVehicleFollowMode(mode);
-
-    // Keep GTA's static target alphas synchronized so FollowPed_SA / FollowCar_SA
-    // never pull vertical camera Alpha back toward 0.0f on subsequent frames.
-    if (aimMode)
-    {
-        // In AimWeapon / Sniper, keep the user's desired vertical pitch (no snap-back).
-        targetCam->Alpha = g_desiredAlpha;
-        if (!g_hadMouseInputThisFrame)
-            targetCam->m_fHorizontalAngle = g_desiredBeta;
-        else
-            g_desiredBeta = WrapAngle(targetCam->m_fHorizontalAngle);
-    }
-    else
+    if (g_hadMouseInputThisFrame)
     {
         targetCam->Alpha = g_desiredAlpha;
-        if (!vehicleMode || !g_vehicleAutoCenter.load() || g_hadMouseInputThisFrame)
-            targetCam->m_fHorizontalAngle = g_desiredBeta;
-        else
-            g_desiredBeta = WrapAngle(targetCam->m_fHorizontalAngle);
+        targetCam->m_fTrueAlpha = g_desiredAlpha;
+        targetCam->m_fIdealAlpha = g_desiredAlpha;
+        targetCam->m_fHorizontalAngle = g_desiredBeta;
+        targetCam->m_fTrueBeta = g_desiredBeta;
+        targetCam->AlphaSpeed = 0.0f;
+        targetCam->BetaSpeed = 0.0f;
+        targetCam->m_fAlphaSpeedOverOneFrame = 0.0f;
+        targetCam->m_fBetaSpeedOverOneFrame = 0.0f;
     }
-
-    targetCam->AlphaSpeed = 0.0f;
-    targetCam->BetaSpeed = 0.0f;
-    targetCam->m_fAlphaSpeedOverOneFrame = 0.0f;
-    targetCam->m_fBetaSpeedOverOneFrame = 0.0f;
-    targetCam->m_fTrueAlpha = g_desiredAlpha;
-    targetCam->m_fIdealAlpha = g_desiredAlpha;
-    targetCam->m_fTrueBeta = targetCam->m_fHorizontalAngle;
     targetCam->ResetKeyboardStatics = true;
-    WriteStaticFollowAlphas(g_desiredAlpha);
 }
 
 void NativeCameraMouseApply(CCamera& camera)

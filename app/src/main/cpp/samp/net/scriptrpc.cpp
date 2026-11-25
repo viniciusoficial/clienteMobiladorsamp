@@ -686,6 +686,7 @@ void ScrSetPlayerInterior(RPCParameters* rpcParams)
 extern UI *pUI;
 void ScrShowTextDraw(RPCParameters* rpcParams)
 {
+    /*
 	unsigned char* Data = reinterpret_cast<unsigned char*>(rpcParams->input);
 	int iBitLength = rpcParams->numberOfBitsOfData;
 
@@ -701,21 +702,17 @@ void ScrShowTextDraw(RPCParameters* rpcParams)
 	TEXT_DRAW_TRANSMIT textDrawTransmit;
 	uint16_t wTextLength;
 	RakNet::BitStream bsData(Data, (iBitLength / 8) + 1, false);
-	if (!bsData.Read(wTextDrawID) || wTextDrawID >= MAX_TEXT_DRAWS ||
-	    !bsData.Read((char*)&textDrawTransmit, sizeof(TEXT_DRAW_TRANSMIT)) ||
-	    !bsData.Read(wTextLength) || wTextLength > 1024)
-	{
-	    Log("ScrShowTextDraw: invalid RPC data");
-	    return;
-	}
+	bsData.Read(wTextDrawID);
+	bsData.Read((char*)& textDrawTransmit, sizeof(TEXT_DRAW_TRANSMIT));
+	bsData.Read(wTextLength);
 
 	char szText[1024 + 1];
 
-	if (!bsData.Read(szText, wTextLength))
-	    return;
+	bsData.Read(szText, wTextLength);
 	szText[wTextLength] = 0;
 
 	pTextDrawPool->New(wTextDrawID, &textDrawTransmit, szText);
+     */
 }
 // 0.3.7
 void ScrHideTextDraw(RPCParameters* rpcParams)

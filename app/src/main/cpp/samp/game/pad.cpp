@@ -40,13 +40,28 @@ uint16_t CPad__GetPedWalkLeftRight_hook(uintptr_t thiz)
         const bool walking = PcInputIsPressed(PcInputAction::WALK) &&
                              !PcInputIsPressed(PcInputAction::SPRINT) &&
                              !PcInputIsPressed(PcInputAction::AIM);
-        if (left && right)
-            LocalPlayerKeys.wKeyLR = 0;
-        else if (left)
+
+        static int lastHorizDir = 0;
+        static bool prevLeft = false;
+        static bool prevRight = false;
+
+        if (left && !prevLeft) lastHorizDir = -1;
+        if (right && !prevRight) lastHorizDir = 1;
+        if (!left && right) lastHorizDir = 1;
+        if (!right && left) lastHorizDir = -1;
+        if (!left && !right) lastHorizDir = 0;
+
+        prevLeft = left;
+        prevRight = right;
+
+        if (lastHorizDir < 0)
             LocalPlayerKeys.wKeyLR = walking ? 0xFFE0 : 0xFF80;
-        else if (right)
+        else if (lastHorizDir > 0)
             LocalPlayerKeys.wKeyLR = walking ? 0x0020 : 0x0080;
-        LocalPlayerKeys.bKeys[ePadKeys::KEY_WALK] = walking && (left != right);
+        else
+            LocalPlayerKeys.wKeyLR = 0;
+
+        LocalPlayerKeys.bKeys[ePadKeys::KEY_WALK] = walking && (lastHorizDir != 0);
         return LocalPlayerKeys.wKeyLR;
     }
 }
@@ -74,13 +89,28 @@ uint16_t CPad__GetPedWalkUpDown_hook(uintptr_t thiz)
         const bool walking = PcInputIsPressed(PcInputAction::WALK) &&
                              !PcInputIsPressed(PcInputAction::SPRINT) &&
                              !PcInputIsPressed(PcInputAction::AIM);
-        if (fwd && back)
-            LocalPlayerKeys.wKeyUD = 0;
-        else if (fwd)
+
+        static int lastVertDir = 0;
+        static bool prevFwd = false;
+        static bool prevBack = false;
+
+        if (fwd && !prevFwd) lastVertDir = 1;
+        if (back && !prevBack) lastVertDir = -1;
+        if (!fwd && back) lastVertDir = -1;
+        if (!back && fwd) lastVertDir = 1;
+        if (!fwd && !back) lastVertDir = 0;
+
+        prevFwd = fwd;
+        prevBack = back;
+
+        if (lastVertDir > 0)
             LocalPlayerKeys.wKeyUD = walking ? 0xFFE0 : 0xFF80;
-        else if (back)
+        else if (lastVertDir < 0)
             LocalPlayerKeys.wKeyUD = walking ? 0x0020 : 0x0080;
-        if (fwd != back)
+        else
+            LocalPlayerKeys.wKeyUD = 0;
+
+        if (lastVertDir != 0)
             LocalPlayerKeys.bKeys[ePadKeys::KEY_WALK] = walking;
         return LocalPlayerKeys.wKeyUD;
     }
