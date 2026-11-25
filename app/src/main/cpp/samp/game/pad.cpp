@@ -103,8 +103,8 @@ uint32_t CPad__GetSprint_hook(uintptr_t thiz, uint32_t unk)
     }
 }
 
-bool (*CPad__SprintJustDown)(uintptr_t thiz);
-bool CPad__SprintJustDown_hook(uintptr_t thiz)
+static bool (*CPad__SprintJustDown)(uintptr_t thiz);
+static bool CPad__SprintJustDown_hook(uintptr_t thiz)
 {
     if (*pbyteCurrentPlayer)
     {
@@ -546,8 +546,8 @@ bool CPad__GetEnterTargeting_hook(uintptr_t thiz)
     }
 }
 
-bool (*CPad__GetExitTargeting)(uintptr_t thiz);
-bool CPad__GetExitTargeting_hook(uintptr_t thiz)
+static bool (*CPad__GetExitTargeting)(uintptr_t thiz);
+static bool CPad__GetExitTargeting_hook(uintptr_t thiz)
 {
     if (*pbyteCurrentPlayer)
         return CPad__GetExitTargeting(thiz);
@@ -558,24 +558,24 @@ bool CPad__GetExitTargeting_hook(uintptr_t thiz)
     return CPad__GetExitTargeting(thiz);
 }
 
-int16_t (*CPad__LookAroundLeftRight)(uintptr_t thiz);
-int16_t CPad__LookAroundLeftRight_hook(uintptr_t thiz)
+static int16_t (*CPad__LookAroundLeftRight)(uintptr_t thiz);
+static int16_t CPad__LookAroundLeftRight_hook(uintptr_t thiz)
 {
     if (*pbyteCurrentPlayer == 0 && PcInputIsEnabledForTouch())
         return 0;
     return CPad__LookAroundLeftRight(thiz);
 }
 
-int16_t (*CPad__LookAroundUpDown)(uintptr_t thiz);
-int16_t CPad__LookAroundUpDown_hook(uintptr_t thiz)
+static int16_t (*CPad__LookAroundUpDown)(uintptr_t thiz);
+static int16_t CPad__LookAroundUpDown_hook(uintptr_t thiz)
 {
     if (*pbyteCurrentPlayer == 0 && PcInputIsEnabledForTouch())
         return 0;
     return CPad__LookAroundUpDown(thiz);
 }
 
-float (*CPad__AimWeaponLeftRight)(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController);
-float CPad__AimWeaponLeftRight_hook(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController)
+static float (*CPad__AimWeaponLeftRight)(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController);
+static float CPad__AimWeaponLeftRight_hook(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController)
 {
     if (*pbyteCurrentPlayer == 0 && pPed == GamePool_FindPlayerPed() && PcInputIsEnabledForTouch())
     {
@@ -585,8 +585,8 @@ float CPad__AimWeaponLeftRight_hook(uintptr_t thiz, CPedGTA* pPed, bool* bUsingC
     return CPad__AimWeaponLeftRight(thiz, pPed, bUsingController);
 }
 
-float (*CPad__AimWeaponUpDown)(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController);
-float CPad__AimWeaponUpDown_hook(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController)
+static float (*CPad__AimWeaponUpDown)(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController);
+static float CPad__AimWeaponUpDown_hook(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController)
 {
     if (*pbyteCurrentPlayer == 0 && pPed == GamePool_FindPlayerPed() && PcInputIsEnabledForTouch())
     {
@@ -596,7 +596,7 @@ float CPad__AimWeaponUpDown_hook(uintptr_t thiz, CPedGTA* pPed, bool* bUsingCont
     return CPad__AimWeaponUpDown(thiz, pPed, bUsingController);
 }
 
-bool IsActiveCamSniperOrCamera()
+static bool IsActiveCamSniperOrCamera()
 {
 #if !VER_x32
     if (g_libGTASA == 0)
@@ -614,8 +614,8 @@ bool IsActiveCamSniperOrCamera()
 #endif
 }
 
-bool (*CPad__SniperZoomIn)(uintptr_t thiz);
-bool CPad__SniperZoomIn_hook(uintptr_t thiz)
+static bool (*CPad__SniperZoomIn)(uintptr_t thiz);
+static bool CPad__SniperZoomIn_hook(uintptr_t thiz)
 {
     if (*pbyteCurrentPlayer == 0 && PcInputIsEnabledForTouch() && IsActiveCamSniperOrCamera())
     {
@@ -625,8 +625,8 @@ bool CPad__SniperZoomIn_hook(uintptr_t thiz)
     return CPad__SniperZoomIn(thiz);
 }
 
-bool (*CPad__SniperZoomOut)(uintptr_t thiz);
-bool CPad__SniperZoomOut_hook(uintptr_t thiz)
+static bool (*CPad__SniperZoomOut)(uintptr_t thiz);
+static bool CPad__SniperZoomOut_hook(uintptr_t thiz)
 {
     if (*pbyteCurrentPlayer == 0 && PcInputIsEnabledForTouch() && IsActiveCamSniperOrCamera())
     {
@@ -668,8 +668,8 @@ uint32_t CPad__CycleWeaponLeftJustDown_hook(uintptr_t thiz)
     }
 }
 
-void (*CPlayerPed__ProcessWeaponSwitch)(uintptr_t thiz, uintptr_t pad);
-void CPlayerPed__ProcessWeaponSwitch_hook(uintptr_t thiz, uintptr_t pad)
+static void (*CPlayerPed__ProcessWeaponSwitch)(uintptr_t thiz, uintptr_t pad);
+static void CPlayerPed__ProcessWeaponSwitch_hook(uintptr_t thiz, uintptr_t pad)
 {
 #if !VER_x32
     CPedGTA* ped = reinterpret_cast<CPedGTA*>(thiz);
@@ -771,8 +771,8 @@ uint32_t CPad__GetDisplayVitalStats_hook(uint32_t thiz)
     return 0;
 }
 
-bool (*CPad__GetLookBehindForPed)(uintptr_t thiz);
-bool CPad__GetLookBehindForPed_hook(uintptr_t thiz)
+static bool (*CPad__GetLookBehindForPed)(uintptr_t thiz);
+static bool CPad__GetLookBehindForPed_hook(uintptr_t thiz)
 {
     if (*pbyteCurrentPlayer == 0 && PcInputIsPressed(PcInputAction::LOOK_BEHIND))
         return true;
@@ -783,8 +783,8 @@ bool CPad__GetLookBehindForPed_hook(uintptr_t thiz)
     return result;
 }
 
-bool (*CPad__GetLookBehindForCar)(uintptr_t thiz);
-bool CPad__GetLookBehindForCar_hook(uintptr_t thiz)
+static bool (*CPad__GetLookBehindForCar)(uintptr_t thiz);
+static bool CPad__GetLookBehindForCar_hook(uintptr_t thiz)
 {
     if (*pbyteCurrentPlayer == 0 && PcInputIsPressed(PcInputAction::LOOK_BEHIND))
         return true;
@@ -1116,8 +1116,8 @@ void CPed__ProcessControl_hook(uintptr_t thiz)
 
 static uintptr_t g_localUseGunTask = 0;
 
-bool (*CTaskSimpleUseGun__ControlGunMove)(uintptr_t thiz, CVector2D* vecMove);
-bool CTaskSimpleUseGun__ControlGunMove_hook(uintptr_t thiz, CVector2D* vecMove)
+static bool (*CTaskSimpleUseGun__ControlGunMove)(uintptr_t thiz, CVector2D* vecMove);
+static bool CTaskSimpleUseGun__ControlGunMove_hook(uintptr_t thiz, CVector2D* vecMove)
 {
     const bool result = CTaskSimpleUseGun__ControlGunMove(thiz, vecMove);
 #if !VER_x32
@@ -1132,8 +1132,8 @@ bool CTaskSimpleUseGun__ControlGunMove_hook(uintptr_t thiz, CVector2D* vecMove)
     return result;
 }
 
-void (*CTaskSimpleUseGun__SetMoveAnim)(uintptr_t thiz, uintptr_t ped);
-void CTaskSimpleUseGun__SetMoveAnim_hook(uintptr_t thiz, uintptr_t ped)
+static void (*s_CTaskSimpleUseGun_SetMoveAnim)(uintptr_t thiz, uintptr_t ped);
+static void s_CTaskSimpleUseGun_SetMoveAnim_hook(uintptr_t thiz, uintptr_t ped)
 {
 #if !VER_x32
     if (thiz != 0 && ped == reinterpret_cast<uintptr_t>(GamePool_FindPlayerPed()) &&
@@ -1154,14 +1154,14 @@ void CTaskSimpleUseGun__SetMoveAnim_hook(uintptr_t thiz, uintptr_t ped)
             if (std::isfinite(origSpeed) && origSpeed > 0.01f && origSpeed < 10.0f)
             {
                 *moveSpeedPtr = origSpeed * scale;
-                CTaskSimpleUseGun__SetMoveAnim(thiz, ped);
+                s_CTaskSimpleUseGun_SetMoveAnim(thiz, ped);
                 *moveSpeedPtr = origSpeed;
                 return;
             }
         }
     }
 #endif
-    CTaskSimpleUseGun__SetMoveAnim(thiz, ped);
+    s_CTaskSimpleUseGun_SetMoveAnim(thiz, ped);
 }
 
 uint32_t TaskUseGun(uintptr_t thiz, uintptr_t ped)
@@ -1337,5 +1337,5 @@ void HookCPad()
     CHook::InlineHook("_ZN4CPad19GetLookBehindForCarEv", &CPad__GetLookBehindForCar_hook, &CPad__GetLookBehindForCar);
     CHook::InlineHook("_ZN10CPlayerPed19ProcessWeaponSwitchEP4CPad", &CPlayerPed__ProcessWeaponSwitch_hook, &CPlayerPed__ProcessWeaponSwitch);
     CHook::InlineHook("_ZN17CTaskSimpleUseGun14ControlGunMoveEP9CVector2D", &CTaskSimpleUseGun__ControlGunMove_hook, &CTaskSimpleUseGun__ControlGunMove);
-    CHook::InlineHook("_ZN17CTaskSimpleUseGun11SetMoveAnimEP4CPed", &CTaskSimpleUseGun__SetMoveAnim_hook, &CTaskSimpleUseGun__SetMoveAnim);
+    CHook::InlineHook("_ZN17CTaskSimpleUseGun11SetMoveAnimEP4CPed", &s_CTaskSimpleUseGun_SetMoveAnim_hook, &s_CTaskSimpleUseGun_SetMoveAnim);
 }
