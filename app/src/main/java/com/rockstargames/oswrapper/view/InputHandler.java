@@ -17,7 +17,7 @@ import com.gta.game.input.KeyboardMouseSettings;
 import com.rockstargames.oswrapper.GameActivityBase;
 import com.rockstargames.oswrapper.GameNative;
 import com.rockstargames.oswrapper.GameThread;
-import com.rockstargames.oswrapper.util.UtilsKt;
+import com.rockstargames.oswrapper.UtilsKt;
 
 import java.util.ArrayList;
 import java.util.Collection;
