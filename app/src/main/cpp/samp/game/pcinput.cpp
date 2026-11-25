@@ -3,7 +3,7 @@
 #include "native_camera_mouse.h"
 #include "../net/netgame.h"
 #include "../gui/gui.h"
-#include "../gui/pausemenu.h"
+#include "../gui/pause_menu.h"
 #include "../vendor/encoding/encoding.h"
 #include <algorithm>
 #include <array>

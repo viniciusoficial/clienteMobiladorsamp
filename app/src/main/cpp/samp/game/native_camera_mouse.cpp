@@ -1,5 +1,6 @@
 #include "native_camera_mouse.h"
 #include "../main.h"
+#include "game.h"
 #include "Camera.h"
 #include "Cam.h"
 #include "CFirstPersonCamera.hpp"

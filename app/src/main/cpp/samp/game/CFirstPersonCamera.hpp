@@ -6,6 +6,9 @@
 #include "font.h"
 #include <string>
 
+class CPlayerPed;
+class CVehicle;
+
 class CFirstPersonCamera
 {
     static bool m_bEnabled;
