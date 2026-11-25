@@ -149,6 +149,11 @@ void NativeCameraMouseReset()
     g_smoothX = 0.0f;
     g_smoothY = 0.0f;
     g_hadMouseInputThisFrame = false;
+    g_hasDesiredState = false;
+    g_lastCamPtr = nullptr;
+    g_lastMode = 0xFFFF;
+    g_desiredAlpha = 0.0f;
+    g_desiredBeta = 0.0f;
 }
 
 void NativeCameraMouseSetOptions(float maxDelta, float smoothing, float aimSensitivity, bool vehicleAutoCenter)

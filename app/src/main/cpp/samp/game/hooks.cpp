@@ -217,10 +217,12 @@ void Render2dStuff_hook()
             pObjectPool->ProcessMaterialText();
         }
 
-        CTextDrawPool* pTextDrawPool = pNetGame->GetTextDrawPool();
-        if (pTextDrawPool && pTextDrawPool->GetState() == false) {
-            pTextDrawPool->SnapshotProcess();
-        }
+	        CTextDrawPool* pTextDrawPool = pNetGame->GetTextDrawPool();
+	        if (pTextDrawPool) {
+	            if (pTextDrawPool->GetState() == false)
+	                pTextDrawPool->SnapshotProcess();
+            pTextDrawPool->Draw();
+	        }
     }
 
     if (pUI) pUI->render();
