@@ -208,6 +208,21 @@ public class DialogAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         });
     }
 
+    public void selectPosition(int position) {
+        if (position < 0 || position >= this.mRowsList.size()) {
+            return;
+        }
+        if (this.mCurrentSelectedPosition != position) {
+            this.mCurrentSelectedPosition = position;
+            notifyDataSetChanged();
+        }
+        if (this.mOnClickListener != null) {
+            String row = this.mRowsList.get(position);
+            String firstField = this.mTablist ? row.split("\t")[0] : row;
+            this.mOnClickListener.onClick(position, Util.getStringWithoutColors(firstField));
+        }
+    }
+
     public int getItemCount() {
         return this.mRowsList.size();
     }

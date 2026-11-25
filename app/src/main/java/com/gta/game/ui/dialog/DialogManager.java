@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -143,6 +144,44 @@ public class DialogManager {
         isShow = false;
         Util.HideLayout(this.mMainLayout, false);
         Util.scaleViewAndChildren(this.activity, this.mMainLayout);
+        setupPcKeyboardSupport();
+    }
+
+    private void setupPcKeyboardSupport() {
+        this.mMainLayout.setFocusable(true);
+        this.mMainLayout.setFocusableInTouchMode(true);
+        View.OnKeyListener keyListener = (view, keyCode, event) -> {
+            if (!this.isShow || event.getAction() != KeyEvent.ACTION_DOWN) {
+                return false;
+            }
+            if (keyCode == KeyEvent.KEYCODE_ESCAPE) {
+                int responseBtn = (this.mButtonNegative != null && !this.mButtonNegative.isEmpty()) ? 0 : 1;
+                SendDialogResponse(responseBtn, this.mCurrentListitem, this.mCurrentInputtext);
+                return true;
+            }
+            if (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
+                SendDialogResponse(1, this.mCurrentListitem, this.mCurrentInputtext);
+                return true;
+            }
+            if ((this.mDialogStyle == 2 || this.mDialogStyle == 4 || this.mDialogStyle == 5)
+                    && this.mListAdapter != null && this.mListAdapter.getItemCount() > 0) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    int next = Math.min(this.mListAdapter.getItemCount() - 1, Math.max(0, this.mCurrentListitem + 1));
+                    this.mListAdapter.selectPosition(next);
+                    this.mDialogListRecycler.scrollToPosition(next);
+                    return true;
+                }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                    int prev = Math.max(0, this.mCurrentListitem - 1);
+                    this.mListAdapter.selectPosition(prev);
+                    this.mDialogListRecycler.scrollToPosition(prev);
+                    return true;
+                }
+            }
+            return false;
+        };
+        this.mMainLayout.setOnKeyListener(keyListener);
+        this.mDialogInput.setOnKeyListener(keyListener);
     }
 
     public void show(int i, int i2, String str, String str2, String str3, String str4) {
@@ -168,6 +207,11 @@ public class DialogManager {
 
         loadDialog();
         Util.ShowLayout(this.mMainLayout, true);
+        if (this.mDialogStyle == 1 || this.mDialogStyle == 3) {
+            this.mDialogInput.requestFocus();
+        } else {
+            this.mMainLayout.requestFocus();
+        }
     }
 
     public void hideWithoutReset() {
@@ -191,6 +235,7 @@ public class DialogManager {
         isShow = false;
         Util.HideLayout(this.mMainLayout, true);
         InputHandler.INSTANCE.setInterfaceVisible(false);
+        InputHandler.INSTANCE.restoreGameFocus();
     }
 
     public void onHeightChanged(int i) {

@@ -1106,10 +1106,15 @@ bool CLocalPlayer::HandlePassengerEntry()
 	//if (!isHeldDown) return false;
 
 	if (!bNeedEnterVehicle) return false;
-	if (PcInputConsumeDriverVehicleEntry() && EnterVehicleAsDriver())
+	if (PcInputConsumeDriverVehicleEntry())
 	{
+		const bool entered = EnterVehicleAsDriver();
 		bNeedEnterVehicle = false;
-		return true;
+		return entered;
+	}
+	if (PcInputConsumePassengerVehicleEntry())
+	{
+		return GbuttonEnterVehicleAsPassenger();
 	}
 
 	VEHICLEID ClosetVehicleID = pVehiclePool->FindNearestToLocalPlayerPed();

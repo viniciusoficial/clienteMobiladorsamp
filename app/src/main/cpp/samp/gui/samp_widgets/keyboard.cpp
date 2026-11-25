@@ -592,15 +592,16 @@ KeyboardHistory::KeyboardHistory()
 
 void KeyboardHistory::add(const std::string& input)
 {
-    for (int i = KEYBOARD_MAX_HISTORY_MESSAGES - 2; i > 0; i--)
+    if (input.empty()) return;
+
+    for (int i = KEYBOARD_MAX_HISTORY_MESSAGES - 1; i > 0; i--)
     {
-        std::string str = m_vMessages[i];
         m_vMessages[i] = m_vMessages[i - 1];
-        m_vMessages[i - 1] = str;
     }
 
     m_vMessages[0] = input;
     if (m_count < KEYBOARD_MAX_HISTORY_MESSAGES) m_count++;
+    m_index = 0;
 }
 
 void KeyboardHistory::reset()

@@ -628,6 +628,33 @@ public final class GameThread {
         });
     }
 
+    public void onPcMouseOptions(final float maxDelta, final float smoothing) {
+        queueEvent(() -> {
+            KeyboardMouseBridge.nativeSetMouseOptions(maxDelta, smoothing);
+            return Unit.INSTANCE;
+        });
+    }
+
+    public void onPcCombatConfig(
+            final float aimSensitivity,
+            final float strafeSpeed,
+            final boolean pcSprint,
+            final boolean fastWeaponSwitch,
+            final boolean vehicleAutoCenter) {
+        queueEvent(() -> {
+            KeyboardMouseBridge.nativeSetCombatConfig(
+                    aimSensitivity, strafeSpeed, pcSprint, fastWeaponSwitch, vehicleAutoCenter);
+            return Unit.INSTANCE;
+        });
+    }
+
+    public void onPcSelectWeaponSlot(final int slot) {
+        queueEvent(() -> {
+            KeyboardMouseBridge.nativeSelectWeaponSlot(slot);
+            return Unit.INSTANCE;
+        });
+    }
+
     public void onPcInputAction(final int action, final boolean pressed) {
         queueEvent(() -> {
             KeyboardMouseBridge.nativeSetAction(action, pressed);

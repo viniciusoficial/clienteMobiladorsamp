@@ -4,6 +4,9 @@
 #include "../gui/gui.h"
 #include "../vendor/armhook/patch.h"
 #include "World.h"
+#include "Camera.h"
+#include <algorithm>
+#include <cmath>
 extern UI* pUI;
 extern CGame* pGame;
 extern CNetGame* pNetGame;
@@ -32,10 +35,18 @@ uint16_t CPad__GetPedWalkLeftRight_hook(uintptr_t thiz)
     {
         // Local player
         LocalPlayerKeys.wKeyLR = CPad__GetPedWalkLeftRight(thiz);
-        if (PcInputIsPressed(PcInputAction::MOVE_LEFT))
-            LocalPlayerKeys.wKeyLR = 0xFF80;
-        else if (PcInputIsPressed(PcInputAction::MOVE_RIGHT))
-            LocalPlayerKeys.wKeyLR = 0x80;
+        const bool left = PcInputIsPressed(PcInputAction::MOVE_LEFT);
+        const bool right = PcInputIsPressed(PcInputAction::MOVE_RIGHT);
+        const bool walking = PcInputIsPressed(PcInputAction::WALK) &&
+                             !PcInputIsPressed(PcInputAction::SPRINT) &&
+                             !PcInputIsPressed(PcInputAction::AIM);
+        if (left && right)
+            LocalPlayerKeys.wKeyLR = 0;
+        else if (left)
+            LocalPlayerKeys.wKeyLR = walking ? 0xFFE0 : 0xFF80;
+        else if (right)
+            LocalPlayerKeys.wKeyLR = walking ? 0x0020 : 0x0080;
+        LocalPlayerKeys.bKeys[ePadKeys::KEY_WALK] = walking && (left != right);
         return LocalPlayerKeys.wKeyLR;
     }
 }
@@ -58,10 +69,19 @@ uint16_t CPad__GetPedWalkUpDown_hook(uintptr_t thiz)
     {
         // Local player
         LocalPlayerKeys.wKeyUD = CPad__GetPedWalkUpDown(thiz);
-        if (PcInputIsPressed(PcInputAction::MOVE_FORWARD))
-            LocalPlayerKeys.wKeyUD = 0xFF80;
-        else if (PcInputIsPressed(PcInputAction::MOVE_BACKWARD))
-            LocalPlayerKeys.wKeyUD = 0x80;
+        const bool fwd = PcInputIsPressed(PcInputAction::MOVE_FORWARD);
+        const bool back = PcInputIsPressed(PcInputAction::MOVE_BACKWARD);
+        const bool walking = PcInputIsPressed(PcInputAction::WALK) &&
+                             !PcInputIsPressed(PcInputAction::SPRINT) &&
+                             !PcInputIsPressed(PcInputAction::AIM);
+        if (fwd && back)
+            LocalPlayerKeys.wKeyUD = 0;
+        else if (fwd)
+            LocalPlayerKeys.wKeyUD = walking ? 0xFFE0 : 0xFF80;
+        else if (back)
+            LocalPlayerKeys.wKeyUD = walking ? 0x0020 : 0x0080;
+        if (fwd != back)
+            LocalPlayerKeys.bKeys[ePadKeys::KEY_WALK] = walking;
         return LocalPlayerKeys.wKeyUD;
     }
 }
@@ -75,10 +95,36 @@ uint32_t CPad__GetSprint_hook(uintptr_t thiz, uint32_t unk)
     }
     else
     {
+        const bool sprinting = PcInputIsPressed(PcInputAction::SPRINT) &&
+                               !PcInputIsPressed(PcInputAction::WALK);
         LocalPlayerKeys.bKeys[ePadKeys::KEY_SPRINT] =
-            CPad__GetSprint(thiz, unk) || PcInputIsPressed(PcInputAction::SPRINT);
+            CPad__GetSprint(thiz, unk) || sprinting;
         return LocalPlayerKeys.bKeys[ePadKeys::KEY_SPRINT];
     }
+}
+
+bool (*CPad__SprintJustDown)(uintptr_t thiz);
+bool CPad__SprintJustDown_hook(uintptr_t thiz)
+{
+    if (*pbyteCurrentPlayer)
+    {
+        return CPad__SprintJustDown(thiz);
+    }
+
+    const bool moving = PcInputIsPressed(PcInputAction::MOVE_FORWARD) ||
+                        PcInputIsPressed(PcInputAction::MOVE_BACKWARD) ||
+                        PcInputIsPressed(PcInputAction::MOVE_LEFT) ||
+                        PcInputIsPressed(PcInputAction::MOVE_RIGHT);
+    if (PcInputIsEnabledForTouch() && PcInputIsPcSprintEnabled() &&
+        PcInputIsPressed(PcInputAction::SPRINT) &&
+        !PcInputIsPressed(PcInputAction::WALK) &&
+        !PcInputIsPressed(PcInputAction::AIM) && moving)
+    {
+        // Hold Shift to sprint at full PC speed without tap-spamming.
+        return true;
+    }
+
+    return CPad__SprintJustDown(thiz) || PcInputIsJustPressed(PcInputAction::SPRINT);
 }
 
 uint32_t(*CPad__JumpJustDown)(uintptr_t thiz);
@@ -99,9 +145,9 @@ uint32_t CPad__JumpJustDown_hook(uintptr_t thiz)
     else
     {
         const bool nativePressed = CPad__JumpJustDown(thiz);
-        LocalPlayerKeys.bKeys[ePadKeys::KEY_JUMP] =
-            nativePressed || PcInputIsPressed(PcInputAction::JUMP);
-        return nativePressed || PcInputConsumePress(PcInputAction::JUMP);
+        const bool pcPressed = PcInputIsPressed(PcInputAction::JUMP);
+        LocalPlayerKeys.bKeys[ePadKeys::KEY_JUMP] = nativePressed || pcPressed;
+        return nativePressed || PcInputIsJustPressed(PcInputAction::JUMP);
     }
 }
 
@@ -116,7 +162,7 @@ uint32_t CPad__GetJump_hook(uintptr_t thiz)
     else
     {
         LocalPlayerKeys.bKeys[ePadKeys::KEY_JUMP] =
-            CPad__JumpJustDown(thiz) || PcInputIsPressed(PcInputAction::JUMP);
+            CPad__GetJump(thiz) || PcInputIsPressed(PcInputAction::JUMP);
         return LocalPlayerKeys.bKeys[ePadKeys::KEY_JUMP];
     }
 }
@@ -146,7 +192,7 @@ uint32_t CPad__GetAbortClimb_hook(uintptr_t thiz)
     else
     {
         LocalPlayerKeys.bKeys[ePadKeys::KEY_SECONDARY_ATTACK] =
-            CPad__GetAutoClimb(thiz) || PcInputIsPressed(PcInputAction::VEHICLE);
+            CPad__GetAbortClimb(thiz) || PcInputIsPressed(PcInputAction::VEHICLE);
         return LocalPlayerKeys.bKeys[ePadKeys::KEY_SECONDARY_ATTACK];
     }
 }
@@ -192,7 +238,7 @@ uint32_t CPad__DuckJustDown_hook(uintptr_t thiz, int unk)
     else
     {
         return CPad__DuckJustDown(thiz, unk) ||
-               PcInputConsumePress(PcInputAction::CROUCH);
+               PcInputIsJustPressed(PcInputAction::CROUCH);
     }
 }
 
@@ -262,9 +308,13 @@ int16_t CPad__GetSteeringLeftRight_hook(uintptr_t thiz)
     {
         // local player
         LocalPlayerKeys.wKeyLR = CPad__GetSteeringLeftRight(thiz);
-        if (PcInputIsPressed(PcInputAction::MOVE_LEFT))
+        const bool left = PcInputIsPressed(PcInputAction::MOVE_LEFT);
+        const bool right = PcInputIsPressed(PcInputAction::MOVE_RIGHT);
+        if (left && right)
+            LocalPlayerKeys.wKeyLR = 0;
+        else if (left)
             LocalPlayerKeys.wKeyLR = 0xFF80;
-        else if (PcInputIsPressed(PcInputAction::MOVE_RIGHT))
+        else if (right)
             LocalPlayerKeys.wKeyLR = 0x80;
         return LocalPlayerKeys.wKeyLR;
     }
@@ -282,9 +332,13 @@ uint16_t CPad__GetSteeringUpDown_hook(uintptr_t thiz)
     {
         // local player
         LocalPlayerKeys.wKeyUD = CPad__GetSteeringUpDown(thiz);
-        if (PcInputIsPressed(PcInputAction::MOVE_FORWARD))
+        const bool fwd = PcInputIsPressed(PcInputAction::MOVE_FORWARD);
+        const bool back = PcInputIsPressed(PcInputAction::MOVE_BACKWARD);
+        if (fwd && back)
+            LocalPlayerKeys.wKeyUD = 0;
+        else if (fwd)
             LocalPlayerKeys.wKeyUD = 0xFF80;
-        else if (PcInputIsPressed(PcInputAction::MOVE_BACKWARD))
+        else if (back)
             LocalPlayerKeys.wKeyUD = 0x80;
         return LocalPlayerKeys.wKeyUD;
     }
@@ -492,20 +546,107 @@ bool CPad__GetEnterTargeting_hook(uintptr_t thiz)
     }
 }
 
+bool (*CPad__GetExitTargeting)(uintptr_t thiz);
+bool CPad__GetExitTargeting_hook(uintptr_t thiz)
+{
+    if (*pbyteCurrentPlayer)
+        return CPad__GetExitTargeting(thiz);
+
+    if (PcInputOwnsTargeting())
+        return !PcInputIsPressed(PcInputAction::AIM);
+
+    return CPad__GetExitTargeting(thiz);
+}
+
+int16_t (*CPad__LookAroundLeftRight)(uintptr_t thiz);
+int16_t CPad__LookAroundLeftRight_hook(uintptr_t thiz)
+{
+    if (*pbyteCurrentPlayer == 0 && PcInputIsEnabledForTouch())
+        return 0;
+    return CPad__LookAroundLeftRight(thiz);
+}
+
+int16_t (*CPad__LookAroundUpDown)(uintptr_t thiz);
+int16_t CPad__LookAroundUpDown_hook(uintptr_t thiz)
+{
+    if (*pbyteCurrentPlayer == 0 && PcInputIsEnabledForTouch())
+        return 0;
+    return CPad__LookAroundUpDown(thiz);
+}
+
+float (*CPad__AimWeaponLeftRight)(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController);
+float CPad__AimWeaponLeftRight_hook(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController)
+{
+    if (*pbyteCurrentPlayer == 0 && pPed == GamePool_FindPlayerPed() && PcInputIsEnabledForTouch())
+    {
+        if (bUsingController) *bUsingController = false;
+        return 0.0f;
+    }
+    return CPad__AimWeaponLeftRight(thiz, pPed, bUsingController);
+}
+
+float (*CPad__AimWeaponUpDown)(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController);
+float CPad__AimWeaponUpDown_hook(uintptr_t thiz, CPedGTA* pPed, bool* bUsingController)
+{
+    if (*pbyteCurrentPlayer == 0 && pPed == GamePool_FindPlayerPed() && PcInputIsEnabledForTouch())
+    {
+        if (bUsingController) *bUsingController = false;
+        return 0.0f;
+    }
+    return CPad__AimWeaponUpDown(thiz, pPed, bUsingController);
+}
+
+bool IsActiveCamSniperOrCamera()
+{
+#if !VER_x32
+    if (g_libGTASA == 0)
+        return false;
+    static CCamera& TheCamera = *reinterpret_cast<CCamera*>(g_libGTASA + 0x9F86F8);
+    if (TheCamera.m_nActiveCam >= 3)
+        return false;
+    const uint16_t mode = static_cast<uint16_t>(TheCamera.m_aCams[TheCamera.m_nActiveCam].m_nMode);
+    return mode == MODE_SNIPER || mode == MODE_SNIPER_RUNABOUT ||
+           mode == MODE_ROCKETLAUNCHER || mode == MODE_ROCKETLAUNCHER_RUNABOUT ||
+           mode == MODE_ROCKETLAUNCHER_HS || mode == MODE_ROCKETLAUNCHER_RUNABOUT_HS ||
+           mode == MODE_CAMERA;
+#else
+    return false;
+#endif
+}
+
+bool (*CPad__SniperZoomIn)(uintptr_t thiz);
+bool CPad__SniperZoomIn_hook(uintptr_t thiz)
+{
+    if (*pbyteCurrentPlayer == 0 && PcInputIsEnabledForTouch() && IsActiveCamSniperOrCamera())
+    {
+        if (PcInputConsumeWeaponWheel(1) || PcInputIsPressed(PcInputAction::WEAPON_NEXT))
+            return true;
+    }
+    return CPad__SniperZoomIn(thiz);
+}
+
+bool (*CPad__SniperZoomOut)(uintptr_t thiz);
+bool CPad__SniperZoomOut_hook(uintptr_t thiz)
+{
+    if (*pbyteCurrentPlayer == 0 && PcInputIsEnabledForTouch() && IsActiveCamSniperOrCamera())
+    {
+        if (PcInputConsumeWeaponWheel(-1) || PcInputIsPressed(PcInputAction::WEAPON_PREVIOUS))
+            return true;
+    }
+    return CPad__SniperZoomOut(thiz);
+}
+
 bool bWeaponClicked;
 
 uint32_t (*CPad__CycleWeaponRightJustDown)(uintptr_t thiz);
 uint32_t CPad__CycleWeaponRightJustDown_hook(uintptr_t thiz)
 {
-    if(dwCurPlayerActor && (byteCurPlayer != 0)) return 0;
+    if (*pbyteCurrentPlayer) return 0;
 
-    if (PcInputConsumeWeaponWheel(1))
+    if (!IsActiveCamSniperOrCamera() && PcInputConsumeWeaponWheel(1))
         return 1;
 
-    if(!bWeaponClicked) {
-        return 0;
-    }
-    else {
+    if (bWeaponClicked) {
         bWeaponClicked = false;
         return 1;
     }
@@ -521,10 +662,64 @@ uint32_t CPad__CycleWeaponLeftJustDown_hook(uintptr_t thiz)
     }
     else
     {
-        if (PcInputConsumeWeaponWheel(-1))
+        if (!IsActiveCamSniperOrCamera() && PcInputConsumeWeaponWheel(-1))
             return 1;
         return CPad__CycleWeaponLeftJustDown(thiz);
     }
+}
+
+void (*CPlayerPed__ProcessWeaponSwitch)(uintptr_t thiz, uintptr_t pad);
+void CPlayerPed__ProcessWeaponSwitch_hook(uintptr_t thiz, uintptr_t pad)
+{
+#if !VER_x32
+    CPedGTA* ped = reinterpret_cast<CPedGTA*>(thiz);
+    if (ped != nullptr && ped == GamePool_FindPlayerPed() &&
+        PcInputIsEnabledForTouch() && !ped->IsInVehicle() && !IsActiveCamSniperOrCamera())
+    {
+        const int directSlot = PcInputConsumeWeaponSlot();
+        if (directSlot >= 0 && directSlot < 13)
+        {
+            const CWeapon& w = ped->m_aWeapons[directSlot];
+            if (directSlot == 0 || (w.dwType != 0 && (directSlot <= 1 || w.dwAmmo > 0)))
+            {
+                if (static_cast<int>(ped->m_nActiveWeaponSlot) != directSlot)
+                {
+                    ((void(*)(uintptr_t, int, float))(g_libGTASA + 0x5996D4))(
+                        thiz, static_cast<int>(ped->m_nActiveWeaponSlot), -1000.0f);
+                    ((void(*)(uintptr_t, int))(g_libGTASA + 0x58DCAC))(thiz, directSlot);
+                }
+                return;
+            }
+        }
+
+        const int peekDir = PcInputPeekWeaponWheel();
+        if (PcInputIsFastWeaponSwitchEnabled() && peekDir != 0 &&
+            !PcInputIsPressed(PcInputAction::AIM))
+        {
+            const int step = PcInputConsumeWeaponWheel(peekDir > 0 ? 1 : -1);
+            if (step != 0)
+            {
+                const int startSlot = static_cast<int>(ped->m_nActiveWeaponSlot);
+                for (int i = 1; i <= 12; ++i)
+                {
+                    const int cand = (startSlot + step * i + 13) % 13;
+                    const CWeapon& w = ped->m_aWeapons[cand];
+                    if (cand == 0 || (w.dwType != 0 && (cand <= 1 || w.dwAmmo > 0)))
+                    {
+                        if (cand != startSlot)
+                        {
+                            ((void(*)(uintptr_t, int, float))(g_libGTASA + 0x5996D4))(
+                                thiz, startSlot, -1000.0f);
+                            ((void(*)(uintptr_t, int))(g_libGTASA + 0x58DCAC))(thiz, cand);
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+    }
+#endif
+    CPlayerPed__ProcessWeaponSwitch(thiz, pad);
 }
 
 bool (*CPad__GetWeapon)(uintptr_t thiz, CPedGTA* pPed);
@@ -576,15 +771,24 @@ uint32_t CPad__GetDisplayVitalStats_hook(uint32_t thiz)
     return 0;
 }
 
-uint32_t(*CPad__GetLookBehindForPed)(uint32_t thiz);
-uint32_t CPad__GetLookBehindForPed_hook(uint32_t thiz)
+bool (*CPad__GetLookBehindForPed)(uintptr_t thiz);
+bool CPad__GetLookBehindForPed_hook(uintptr_t thiz)
 {
-    uint32_t result = CPad__GetLookBehindForPed(thiz);
+    if (*pbyteCurrentPlayer == 0 && PcInputIsPressed(PcInputAction::LOOK_BEHIND))
+        return true;
 
-    VoiceButton* vbutton = pUI->voicebutton();
-    if (vbutton->countdown > 50) return 0;
+    const bool result = CPad__GetLookBehindForPed(thiz);
+    if (pUI && pUI->voicebutton() && pUI->voicebutton()->countdown > 50)
+        return false;
+    return result;
+}
 
-    //return 0;
+bool (*CPad__GetLookBehindForCar)(uintptr_t thiz);
+bool CPad__GetLookBehindForCar_hook(uintptr_t thiz)
+{
+    if (*pbyteCurrentPlayer == 0 && PcInputIsPressed(PcInputAction::LOOK_BEHIND))
+        return true;
+    return CPad__GetLookBehindForCar(thiz);
 }
 
 int (*CPad__GetNitroFired)(uintptr_t thiz);
@@ -910,6 +1114,56 @@ void CPed__ProcessControl_hook(uintptr_t thiz)
     }
 }
 
+static uintptr_t g_localUseGunTask = 0;
+
+bool (*CTaskSimpleUseGun__ControlGunMove)(uintptr_t thiz, CVector2D* vecMove);
+bool CTaskSimpleUseGun__ControlGunMove_hook(uintptr_t thiz, CVector2D* vecMove)
+{
+    const bool result = CTaskSimpleUseGun__ControlGunMove(thiz, vecMove);
+#if !VER_x32
+    if (*pbyteCurrentPlayer == 0 && thiz != 0 && thiz == g_localUseGunTask &&
+        vecMove != nullptr && PcInputIsEnabledForTouch())
+    {
+        // PC-style instant strafe directional change (removes mobile analog ramp lag).
+        *reinterpret_cast<float*>(thiz + 0x1C) = std::clamp(vecMove->x, -1.0f, 1.0f);
+        *reinterpret_cast<float*>(thiz + 0x20) = std::clamp(vecMove->y, -1.0f, 1.0f);
+    }
+#endif
+    return result;
+}
+
+void (*CTaskSimpleUseGun__SetMoveAnim)(uintptr_t thiz, uintptr_t ped);
+void CTaskSimpleUseGun__SetMoveAnim_hook(uintptr_t thiz, uintptr_t ped)
+{
+#if !VER_x32
+    if (thiz != 0 && ped == reinterpret_cast<uintptr_t>(GamePool_FindPlayerPed()) &&
+        PcInputIsEnabledForTouch())
+    {
+        const float strafeMult = PcInputGetStrafeMultiplier();
+        const float moveX = *reinterpret_cast<float*>(thiz + 0x1C);
+        const float moveY = *reinterpret_cast<float*>(thiz + 0x20);
+        const uintptr_t weaponInfo = *reinterpret_cast<uintptr_t*>(thiz + 0x48);
+        if (weaponInfo != 0 && strafeMult > 1.01f &&
+            (std::fabs(moveX) > 0.05f || std::fabs(moveY) > 0.05f))
+        {
+            const float scale = (std::fabs(moveX) > 0.05f)
+                ? strafeMult
+                : (1.0f + (strafeMult - 1.0f) * 0.35f);
+            float* moveSpeedPtr = reinterpret_cast<float*>(weaponInfo + 0x3C);
+            const float origSpeed = *moveSpeedPtr;
+            if (std::isfinite(origSpeed) && origSpeed > 0.01f && origSpeed < 10.0f)
+            {
+                *moveSpeedPtr = origSpeed * scale;
+                CTaskSimpleUseGun__SetMoveAnim(thiz, ped);
+                *moveSpeedPtr = origSpeed;
+                return;
+            }
+        }
+    }
+#endif
+    CTaskSimpleUseGun__SetMoveAnim(thiz, ped);
+}
+
 uint32_t TaskUseGun(uintptr_t thiz, uintptr_t ped)
 {
     dwCurPlayerActor = ped;
@@ -949,6 +1203,7 @@ uint32_t TaskUseGun(uintptr_t thiz, uintptr_t ped)
     }
     else
     {
+        g_localUseGunTask = thiz;
         result = ((uint32_t(*)(uintptr_t, uintptr_t))(g_libGTASA + 0x616C0C))(thiz, ped);
     }
 
@@ -1069,4 +1324,18 @@ void HookCPad()
 
     CHook::InlineHook("_ZN4CPad13GetTurretLeftEv", &CPad__GetTurretLeft_hook, &CPad__GetTurretLeft);
     CHook::InlineHook("_ZN4CPad14GetTurretRightEv", &CPad__GetTurretRight_hook, &CPad__GetTurretRight);
+
+    CHook::InlineHook("_ZN4CPad14SprintJustDownEv", &CPad__SprintJustDown_hook, &CPad__SprintJustDown);
+    CHook::InlineHook("_ZN4CPad16GetExitTargetingEv", &CPad__GetExitTargeting_hook, &CPad__GetExitTargeting);
+    CHook::InlineHook("_ZN4CPad19LookAroundLeftRightEv", &CPad__LookAroundLeftRight_hook, &CPad__LookAroundLeftRight);
+    CHook::InlineHook("_ZN4CPad16LookAroundUpDownEv", &CPad__LookAroundUpDown_hook, &CPad__LookAroundUpDown);
+    CHook::InlineHook("_ZN4CPad18AimWeaponLeftRightEP4CPedPb", &CPad__AimWeaponLeftRight_hook, &CPad__AimWeaponLeftRight);
+    CHook::InlineHook("_ZN4CPad15AimWeaponUpDownEP4CPedPb", &CPad__AimWeaponUpDown_hook, &CPad__AimWeaponUpDown);
+    CHook::InlineHook("_ZN4CPad12SniperZoomInEv", &CPad__SniperZoomIn_hook, &CPad__SniperZoomIn);
+    CHook::InlineHook("_ZN4CPad13SniperZoomOutEv", &CPad__SniperZoomOut_hook, &CPad__SniperZoomOut);
+    CHook::InlineHook("_ZN4CPad19GetLookBehindForPedEv", &CPad__GetLookBehindForPed_hook, &CPad__GetLookBehindForPed);
+    CHook::InlineHook("_ZN4CPad19GetLookBehindForCarEv", &CPad__GetLookBehindForCar_hook, &CPad__GetLookBehindForCar);
+    CHook::InlineHook("_ZN10CPlayerPed19ProcessWeaponSwitchEP4CPad", &CPlayerPed__ProcessWeaponSwitch_hook, &CPlayerPed__ProcessWeaponSwitch);
+    CHook::InlineHook("_ZN17CTaskSimpleUseGun14ControlGunMoveEP9CVector2D", &CTaskSimpleUseGun__ControlGunMove_hook, &CTaskSimpleUseGun__ControlGunMove);
+    CHook::InlineHook("_ZN17CTaskSimpleUseGun11SetMoveAnimEP4CPed", &CTaskSimpleUseGun__SetMoveAnim_hook, &CTaskSimpleUseGun__SetMoveAnim);
 }

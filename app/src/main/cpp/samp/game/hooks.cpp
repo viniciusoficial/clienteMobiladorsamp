@@ -2,6 +2,8 @@
 #include "../main.h"
 #include "../vendor/armhook/patch.h"
 #include "game.h"
+#include "native_camera_mouse.h"
+#include "Camera.h"
 #include "../net/netgame.h"
 #include "../gui/gui.h"
 #include "Textures/TextureDatabase.h"
@@ -877,8 +879,13 @@ void (*CCam__Process)(uintptr_t thiz);
 
 void CCam__Process_hook(uintptr_t thiz)
 {
+    static CCamera& TheCamera = *reinterpret_cast<CCamera*>(g_libGTASA + 0x9F86F8);
+    CCam* cam = reinterpret_cast<CCam*>(thiz);
+
     if (!CFirstPersonCamera::IsEnabled()) {
+        NativeCameraMousePreProcess(TheCamera, cam);
         CCam__Process(thiz);
+        NativeCameraMousePostProcess(TheCamera, cam);
         return;
     }
 
